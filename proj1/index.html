@@ -209,6 +209,21 @@ surrounding pixels as well, it will do a better job of blending multiple differe
         </ol>
     </li>
 </ul>
+<img src="images/nothing.png">
+<p/>
+This picture has none of our antialiasing techniques applied to it. The aliasing in this picture is very heavy. You can see the lines between the bricks start to break up and become grainy, especially near the edges of the picture. Even towards the center of the picture, the edges between bricks contain jaggies.
+
+<img src="images/supersample_only.png">
+<p/>
+This picture has supersampling at 16x and nothing else applied to it. In the pixel inspector, the edges of the image are much smoother than the previous image, and there are significantly less jaggies. Each brick is distinguishable from the others and they each have a clear outline and sensible shape.
+
+<img src="images/mipmap_only.png">
+<p/>
+This picture has linear mipmap filter and nothing else applied to it. The outline of this image has the same level of jaggedness as the image with no supersampling, and while each brick is distinguishable from the others, the shape of each brick is far more blobby and it degenerates into blurry mush close to the edge.
+
+<img src="images/rtx_on.png">
+<p/>
+This picture has 16x supersamping and trilinear texture filtering applied to it. Here, the shape of each brick is very accurate to how it should look, and each border is the right shape and size. However, the image looks very blurry, especially near the edges.
 
 
 <!-- TODO: second part and screenshots for task 6 writeup -->
