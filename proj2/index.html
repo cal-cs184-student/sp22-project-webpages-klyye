@@ -1,7 +1,238 @@
-<html>
-	<head>
-	</head>
-	<body>
-		Project 2 here
-	</body>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<head>
+  <style>
+    body {
+      padding: 100px;
+      width: 1000px;
+      margin: auto;
+      text-align: left;
+      font-weight: 300;
+      font-family: 'Open Sans', sans-serif;
+      color: #121212;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4 {
+      font-family: 'Source Sans Pro', sans-serif;
+    }
+  </style>
+  <title>CS 184 Mesh Editor</title>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+</head>
+
+
+<body>
+
+  <h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2020</h1>
+  <h1 align="middle">Project 2: Mesh Editor</h1>
+  <h2 align="middle">Kyle Zhang, Shreyas Kompalli CS184-fresh-meshes</h2>
+
+  <br><br>
+
+  <div>
+
+    <h2 align="middle">Overview</h2>
+    <p>Give a high-level overview of what you implemented in this project. Think about what you've built as a whole.
+      Share your thoughts on what interesting things you've learned from completing the project.</p>
+
+    <h2 align="middle">Section I: Bezier Curves and Surfaces</h2>
+
+    <h3 align="middle">Part 1: Bezier curves with 1D de Casteljau subdivision</h3>
+
+    <p>
+      de Casteljau's algorithm creates a Bezier curve by lineraly interpolating with parameter t between the n control points to
+      create n - 2 points, and then it recursively interpolates between those n - 2 points to get n - 3 points, repeating all the
+      way until there is only one point, which is the point on the Bezier curve on parameter t.
+    </p>
+
+    <div align="middle">
+      <table style="width=100%">
+        <tr>
+          <td>
+            <img src="img/task1-1.png" align="middle" width="400px" />
+            <figcaption align="middle">The first level of evaluation.</figcaption>
+          </td>
+          <td>
+            <img src="img/task1-2.png" align="middle" width="400px" />
+            <figcaption align="middle">The second level of evaluation.</figcaption>
+          </td>
+        </tr>
+        <br>
+        <tr>
+          <td>
+            <img src="img/task1-3.png" align="middle" width="400px" />
+            <figcaption align="middle">The third level of evaluation.</figcaption>
+          </td>
+          <td>
+            <img src="img/task1-4.png" align="middle" width="400px" />
+            <figcaption align="middle">The fourth level of evaluation.</figcaption>
+          </td>
+        </tr>
+        <br>
+        <tr>
+          <td>
+            <img src="img/task1-5.png" align="middle" width="400px" />
+            <figcaption align="middle">The fifth level of evaluation.</figcaption>
+          </td>
+          <td>
+            <img src="img/task1-6.png" align="middle" width="400px" />
+            <figcaption align="middle">The final evaluated curve.</figcaption>
+          </td>
+        </tr>
+        <br>
+        <tr>
+          <td>
+            <img src="img/task1-7.png" align="middle" width="400px" />
+            <figcaption align="middle">Another curve with modified control points and a different t value.</figcaption>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+
+    <h3 align="middle">Part 2: Bezier surfaces with separable 1D de Casteljau subdivision</h3>
+    <p>
+      We extended the algorithm to Bezier surfaces by first evaluating the Bezier curve points with parameter u for each of the
+      rows of the the n x n grid of points. This gave us a vector with a final point for each of the n rows, which we then used
+      to calculate the Bezier curve with parameter v for each column of the grid. Finally, we were left with one point that was
+      the result of calculating Bezier curves in both dimensions, which we returned. In the provided code, these points are then
+      used to create the triangle mesh that forms the final image.
+    </p>
+    <div align="middle">
+      <table style="width=100%">
+        <tr>
+          <td>
+            <img src="img/task2-1.png" align="middle" width="400px" />
+            <figcaption align="middle">The Bezier surface teapot.</figcaption>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+
+    <h2 align="middle">Section II: Sampling</h2>
+
+    <h3 align="middle">Part 3: Average normals for half-edge meshes</h3>
+
+    <p>
+      We calculate each vertex normal by looping through the adjacent faces to the vertex. For each face, we calculate the face normal vector and weight that vector by the area of the face. This area is calculated by halving the magnitude of the face normal, because the cross product gives us the area of the parallelogram created by two edges of the face, so one half of that parallelogram gives us the area of the triangle. The resulting value is added to a running sum of vectors, which we then normalize before returning.
+    </p>
+
+    <img src="img/task3-1.png">
+    <p>This is an image of teapot.dae with Phong shading turned it. It looks significantly smoother due to the usage of vertex normals in the shading calculation.</p>
+
+    <img src="img/task3-2.png">
+    <p>This is an image of teapot.dae with the default flat shading. Note how blocky the teapot looks.</p>
+
+    <h3 align="middle">Part 4: Half-edge flip</h3>
+    <p>
+      To implement the edge flip operation, we first labeled each edge, half-edge, vertex, and face explicitly. Then, for each of these labeled elements,
+      we reassigned each of its attributes (halfedge(), vertex(), edge(), etc) to the correct labelled element that it would be assigned to in the
+      new triangle. We were quite methodical about this as we started by reassigning all of h0's attributes, then h1, etc. until we reached h9, upon
+      which we proceeded to reassigning all of the edges attributes. This process continued until all attributes of the half edges, edges, vertices,
+      and faces were assigned. Since we were careful and deliberate with our assignments, our code seems to have worked on the first attempt. Thus,
+      we did not need to do much debugging for this task.
+    </p>
+    <div align="middle">
+      <table style="width=100%">
+        <tr>
+          <td>
+            <img src="img/task4-1.png" align="middle" width="400px" />
+            <figcaption align="middle">The initial teapot with no flips.</figcaption>
+          </td>
+          <td>
+            <img src="img/task4-2.png" align="middle" width="400px" />
+            <figcaption align="middle">The teapot with a few edges flipped once.</figcaption>
+          </td>
+        </tr>
+        <br>
+        <tr>
+          <td>
+            <img src="img/task4-3.png" align="middle" width="400px" />
+            <figcaption align="middle">The teapot with more flipped edges, including ones that were flipped twice.</figcaption>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+
+
+    <h3 align="middle">Part 5: Half-edge split</h3>
+    The implementation of this task is largely just following the pointer assignments on this diagram, found online:
+    <img src="img/task5-0.png" alt="" width="1000"/>
+    <p>Here's a picture of the mesh before any edge splits.</p>
+    <img src="img/task5-1.png" alt=""/>
+    <p>And after some edge splits it looks like this.</p>
+    <img src="img/task5-2.png" alt=""/>
+    <p>And after some more edge splits and edge flips it looks like this.</p>
+    <img src="img/task5-3.png">
+    <p>Fortunately, we did not have to do any lengthy debugging for this tas.</p>
+
+    <h3 align="middle">Part 6: Loop subdivision for mesh upsampling</h3>
+    <p>
+      As far as the implementation goes, much of the steps were laid out for us in the spec/skeleton. Therefore, we spent most of our time understanding the concepts behind the task, and then the code
+      structure and logic came naturally from there. For debugging, we found it quite useful to comment out sections of the task to isolate at which step bugs were happening. For instance, we faced a bug
+      with vertex positions that was happening in step 4, which we discovered by commenting out step 5 and then running the code to see if the error persisted.
+
+      As seen in the cube below, sharp corners and edges get smoothed out and rounded after multiple loop subdivisions. However, since we are using loop subdivision as a way to upsample, we do not want
+      this effect in our final output. The way we can combat this is by pre-splitting the diagonal edges on the cube face before performing loop subdivision. The more we pre-split, the more the cube shape
+      is retained; this is because the pre-processing provides more positions to be averaged from, essentially creating more data points on the faces of the cube and giving the mesh a higher frequency.
+    </p>
+    <div align="middle">
+      <table style="width=100%">
+        <tr>
+          <td>
+            <img src="img/task6-3.png" align="middle" width="400px" />
+            <figcaption align="middle">The initial cube.</figcaption>
+          </td>
+          <td>
+            <img src="img/task6-5.png" align="middle" width="400px" />
+            <figcaption align="middle">The cube after four loop subdivisions.</figcaption>
+          </td>
+        </tr>
+        <br>
+        <tr>
+          <td>
+            <img src="img/task6-1.png" align="middle" width="400px" />
+            <figcaption align="middle">The initial icosahedron.</figcaption>
+          </td>
+          <td>
+            <img src="img/task6-2.png" align="middle" width="400px" />
+            <figcaption align="middle">The icosahedron after two loop subdivisions.</figcaption>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <p>
+      We mostly covered this in the above paragraph, but the reason that the cube deformity is occurring in the first place is because in our "new vertex" position calculation, vertices A and B get a higher
+      weight than vertices C and D. Thus, after many loop subdivisions, the effects of this higher weightage start to show and the shape begins to get skewed in two directions. Our method of combatting this
+      is documented above; by pre-splitting the face edges multiple times, we provide far more data points that need to be weighted, which reduces the overall effects of the uneven weighting in the vertex
+      position calculation.
+    </p>
+
+    <div align="middle">
+      <table style="width=100%">
+        <tr>
+          <td>
+            <img src="img/task6-4.png" align="middle" width="400px" />
+            <figcaption align="middle">The cube after pre-splitting each face edge and loop subdividing three times.</figcaption>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+
+    <h2 align="middle">Section III: Optional Extra Credit</h2>
+    <p>If you are not participating in the optional mesh competition, don't worry about this section!</p>
+
+    <h3 align="middle">Part 7: Design your own mesh!</h3>
+
+</body>
+
 </html>
