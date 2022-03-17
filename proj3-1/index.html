@@ -1,7 +1,266 @@
-<html>
-	<head>
-	</head>
-	<body>
-		Project 3-1 here
-	</body>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+    <style>
+        div.padded {
+            padding-top: 0px;
+            padding-right: 100px;
+            padding-bottom: 0.25in;
+            padding-left: 100px;
+        }
+    </style>
+    <title>Your Name | CS 184</title>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+    <link rel="stylesheet" type="text/css" href="style.css" media="screen"/>
+</head>
+<body>
+<br/>
+<h1 align="middle">Assignment 3: PathTracer</h1>
+<h2 align="middle">Kyle Zhang & Shreyas Kompalli</h2>
+
+<h2 align="middle">Part 1: Ray Generation and Intersection</h2>
+<p>We generate multiple rays for each pixel of the final image, using random sampling to create a Monte Carlo estimate
+    of the integral of radiance over each pixel. These rays all start from the origin in camera space and travel through
+    the pixel that they're being sampled for. In task 1, we transformed each of these rays from camera space into world
+    space. Then, for each ray we generated, we check whether they intersect with primitives in the scene, with each ray
+    checking for intersection against every primitive. We used the Moller-Trumbore algorithm to determine intersections
+    with triangles and solved for roots of a quadratic to determine intersection with spheres (as presented in class).
+    Once we retrieved the point of intersection, we use it and the surface normal to determine the lighting.</p>
+
+<p>The Moller-Trumbore algorithm, as discussed in Discussion 5, uses linear algebra to find the intersection of a ray
+    and a triangle. Specifically, we can derive it by setting our ray equation equal to the equation for point in a
+    triangle expression using barycentric coordinates. Then, we solve for a vector containing our three unknowns: the
+    ray parameter t, and two of our barycentric coordinates (we can derive the third from the other two). We can then
+    apply some linear algebra theorems such as Cramer's rule and the rule for the determinant of a 3x3 matrix to get the
+    formula that we used in the code.</p>
+
+
+<div align="center">
+    <table style="width=100%">
+        <tr>
+            <td align="middle">
+                <img src="images/moller-trombore.png" width="480px"/>
+                <figcaption align="middle">The Moller-Trombore formula that we used.</figcaption>
+            <td align="middle">
+                <img src="images/cube.png" width="480px"/>
+                <figcaption align="middle">The cube.</figcaption>
+        </tr>
+        <br>
+        <tr>
+            <td align="middle">
+                <img src="images/cow.png" width="480px"/>
+                <figcaption align="middle">The cow.</figcaption>
+            <td align="middle">
+                <img src="images/teapot.png" width="480px"/>
+                <figcaption align="middle">The teapot.</figcaption>
+        </tr>
+    </table>
+</div>
+
+
+<h2 align="middle">Part 2: Bounding Volume Hierarchy</h2>
+<p>For our BVH construction algorithm, we began by expanding the bounding box of the current node to fit every primitive
+    between the start and end iterators. We also calculated the average centroid position of all these primitives, and
+    used the average centroid to compute our splitting heuristic. Namely, our heuristic splits the primitives depending
+    on whether they are greater than or less than the average centroid along the x axis (axis was chosen arbitrarily).
+    We used the std::partition function in C++ to help us implement this. In order to account for the edge case of a
+    non-leaf node splitting all the primitives into one child and none into the other, we explicitly checked for empty
+    children and moved one primitive into the empty BVH if it exists.</p>
+
+<h3 align="middle"> The images we couldn't render before implementing BVH: </h3>
+<div align="center">
+    <table style="width=100%">
+        <tr>
+            <td align="middle">
+                <img src="images/beast.png" width="480px"/>
+                <figcaption align="middle">The beast.</figcaption>
+        </tr>
+        <tr>
+            <td align="middle">
+                <img src="images/blob.png" width="480px"/>
+                <figcaption align="middle">The blob.</figcaption>
+        </tr>
+        <tr>
+            <td align="middle">
+                <img src="images/wall-e.png" width="480px"/>
+                <figcaption align="middle">Wall-e.</figcaption>
+        </tr>
+    </table>
+</div>
+
+<p><h3 align="middle">Some timing comparisons on an i7-7700HQ CPU</h3>
+Without BVH:
+<ul>
+<li> -t 8 -r 800 600 -f output/cow.png dae/meshedit/cow.dae 33.3267s
+<li> -t 8 -r 800 600 -f output/beast.png dae/meshedit/beast.dae 428.1154s
+<li> -t 8 -r 800 600 -f output/bunny.png dae/sky/bunny.dae 224.4463s
+</ul>
+
+With BVH:
+<ul>
+<li> -t 8 -r 800 600 -f output/cow.png dae/meshedit/cow.dae 0.3386s
+<li> -t 8 -r 800 600 -f output/beast.png dae/meshedit/beast.dae 0.4241s
+<li> -t 8 -r 800 600 -f output/bunny.png dae/sky/bunny.dae 0.2146s
+</ul>
+
+The time saving are extremely significant, especially for meshes with tens of thousands of triangles. This is due to the BVH cutting down the number of ray intersection checks from O(n) to O(log(n)). Rays now only check for primitive intersections if they happen to intersect with the bounding box which the primitives reside in, which means that there are thousands of triangles that never get checked for intersection with any given ray.
+</p>
+
+<h2 align="middle">Part 3: Direct Illumination</h2>
+<p><h3 align="middle">Uniform Hemisphere Sampling</h3>
+For Uniform Hemisphere Sampling, at every hit point we sample uniformly in a random direction in the unit hemisphere. We check whether a ray shot in this direction originating from the hit point intersects with an object, and if it does, we plug the emission of that object into the reflectance equation, which multiplies by the Lambertian cosine term and the BSDF of the hit object. This way, each sample returns a nonzero color if the sampled angle points towards a light source, and zero otherwise. Finally, we account for the number of samples taken and the probability of sampling uniformly in a hemisphere by dividing by the number of samples times 2 pi.</p>
+
+<p><h3 align="middle">Importance Sampling</h3>
+For Importance Sampling, instead of choosing a random ray direction along a unit hemisphere, we sampled rays in the direction of the lights in the scene. For area lights, we drew multiple samples, as there are multiple angles that could come from that light and strike the hit point, while with point lights, we only drew one sample for efficiency's sake. For each sample, we cast a ray to check if the hit point was occluded from the light we're sampling from. If the ray pointing towards the light intersected with something, we did not add that light's contribution to the final radiance output. Otherwise, we added the contribution of that light to the final radiance of the hit point of the ray. Finally, we plugged the result of this reflectance equation into the Monte Carlo estimator to get our result.
+</p>
+
+<div align="center">
+    <table style="width=100%">
+        <tr>
+            <td align="middle">
+                <img src="images/task3/bunny_uniform.png" width="400px" height="300px"/>
+                <figcaption align="middle">CBbunny.dae rendered with uniform sampling. 16 rays per pixel, 1 sample per area light. Note how noisy the image is.</figcaption>
+            <td align="middle">
+                <img src="images/task3/bunny_importance.png" width="400px" height="300px"/>
+            <figcaption align="middle">CBbunny.dae rendered with importance sampling. 16 rays per pixel, 1 sample per area light. </figcaption>
+        </tr>
+        <tr>
+            <td align="middle">
+                <img src="images/task3/dragon_uniform.png" width="400px" height="300px"/>
+                <figcaption align="middle">dragon.dae rendered with uniform sampling. 16 rays per pixel, 1 sample per area light. Note that the probability of a uniformly sampled ray along the unit hemisphere of hitting a point light is extremely small, resulting in a black image.</figcaption>
+            <td align="middle">
+                <img src="images/task3/dragon_importance.png" width="400px" height="300px"/>
+                <figcaption align="middle">dragon.dae rendered with importance sampling. 16 rays per pixel, 1 sample per area light.</figcaption>
+        </tr>
+    </table>
+</div>
+
+<div align="center">
+    <table style="width=100%">
+        <tr>
+            <td align="middle">
+                <img src="images/task3/01sample.png" width="480px"/>
+                <figcaption align="middle">CBbunny.dae rendered with importance sampling. 1 ray per pixel, 1 sample per area light.</figcaption>
+            <td align="middle">
+                <img src="images/task3/04sample.png" width="480px"/>
+                <figcaption align="middle">CBbunny.dae rendered with importance sampling. 1 ray per pixel, 04 samples per area light.</figcaption>
+        </tr>
+        <br>
+        <tr>
+            <td align="middle">
+                <img src="images/task3/16sample.png" width="480px"/>
+                <figcaption align="middle">CBbunny.dae rendered with importance sampling. 1 ray per pixel, 16 samples per area light.</figcaption>
+            <td align="middle">
+                <img src="images/task3/64sample.png" width="480px"/>
+                <figcaption align="middle">CBbunny.dae rendered with importance sampling. 1 ray per pixel, 64 samples per area light. As expected, more samples reduces the amount of noise.</figcaption>
+        </tr>
+    </table>
+</div>
+<p>Uniform sampling creates images with a lot more noise than importance sample. This noise is usually in the form of a black or dark pixel, which indicates that the randomly sampled ray direction missed the light source entirely. Importance sampling still has noise, which is the natural outcome of using Monte Carlo integration estimation, but because each ray samples a light source, the variance is not quite as large, and the noise is not as dark. Uniform sampling also just straight up does not work for point light sources, as the probability of a randomly sampled angle hitting a singular point in space is infintesimally small. In addition to all these benefits, importance sampling also renders much faster. While the number of rays generated by each technique is the same, the rays generated by importance sampling are much shorter and thus do not need to check for as many intersections.</p>
+</div>
+<div>
+    <h2 align="middle">Part 4: Global Illumination</h2>
+    <p>Similarly to part 3, global illumination is achieved by using sampling to approximate the reflectance equation integral. We sample in a random direction indicated by the BRDF, and we check if a ray sent in this sampled direction intersects with an object in the scene. If it does, then we know that the amount of light at our hit point (the point at which the original ray intersects the object that we are rendering) is a function of the amount of light that this other object, the object that our new ray intersected with, reflects. Thus, we can use a recursive call to our global illumination function to determine the L_i term of our reflectance Monte Carlo estimator. To prevent this code from infinitely recursing, we stop rays from bouncing once they've hit the maximum number of bounces or when a random biased coin flip returns true. This probabilistic way of terminating the recursion is called Russian Roulette, and we must divide the final result by the continuation probability in order to prevent our estimator from being biased.</p>
+
+    <div align="center">
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/task4/direct_only.png" width="480px"/>
+                    <figcaption align="middle">Only direct illumination. This looks pretty much the same as the renders from Part 3. In particular, the shadows under ths spheres are quite dark and the ceiling is not lit.</figcaption>
+                <td align="middle">
+                    <img src="images/task4/indirect_only.png" width="480px"/>
+                    <figcaption align="middle">Only indirect illumination. You can see that indirect illumination enhances the lighting of the scene in dark portions, as those regions could not be reached by only one bounce of light. It also gives rise to some light blue and red coloration on the sides of the spheres, which is the result of recursive light bouncing.</figcaption>
+            </tr>
+            <br>
+            <tr>
+                <td align="middle">
+                    <img src="images/task4/dragonS16L4M3.png" width="480px"/>
+                    <figcaption align="middle">dragon.dae at 16 samples per pixel, 4 light rays, 3 max bounces</figcaption>
+                <td align="middle">
+                    <img src="images/task4/benchS1024L4M3.png" width="480px"/>
+                    <figcaption align="middle">bench.dae at 1024 samples per pixel, 4 light rays, 3 max bounces</figcaption>
+            </tr>
+            <br>
+            <tr>
+                <td align="middle">
+                    <img src="images/task4/CBbunnyS1024L4M3.png" width="480px"/>
+                    <figcaption align="middle">CBbunny.dae at 1024 samples per pixel, 4 light rays, 3 max bounces</figcaption>
+                <td align="middle">
+                    <img src="images/task4/CBspheres_lambertianS1024L4M3.png" width="480px"/>
+                    <figcaption align="middle">CBspheres_lambertian.dae at 1024 samples per pixel, 4 light rays, 3 max bounces</figcaption>
+            </tr>
+            <br>
+            <tr>
+                <td align="middle">
+                    <img src="images/task4/CBbunnyS1024L4M0.png" width="480px"/>
+                    <figcaption align="middle">At 0 max bounces, the bunny looks identical to direct lighting only (part 3).</figcaption>
+                <td align="middle">
+                    <img src="images/task4/CBbunnyS1024L4M1.png" width="480px"/>
+                    <figcaption align="middle">At 1 max bounces, you can see most of the major effects of global illumination.</figcaption>
+            </tr>
+            <br>
+            <tr>
+                <td align="middle">
+                    <img src="images/task4/CBbunnyS1024L4M2.png" width="480px"/>
+                    <figcaption align="middle">At 2 max bounces, the image is slightly more well-lit than 1 max bounces.</figcaption>
+                <td align="middle">
+                    <img src="images/task4/CBbunnyS1024L4M3.png" width="480px"/>
+                    <figcaption align="middle">At 3 max bounces, the image is ever so slightly brighter than at 2 max bounces.</figcaption>
+            </tr>
+            <br>
+            <tr>
+                <td align="middle">
+                    <img src="images/task4/CBbunnyS1024L4M100.png" width="480px"/>
+                    <figcaption align="middle">At 100 max bounces, most of the rays will have been culled by Russian Roulette before ever reaching 100 bounces.</figcaption>
+            </tr>
+            <br>
+            <tr>
+                <td align="middle">
+                    <img src="images/task4/CBbunnyS1L4M3.png" width="480px"/>
+                    <figcaption align="middle">At 1 sample per pixel, the image is very noisy. Note that the quality of the noise is different from direct illumination, namely that it is brighter.</figcaption>
+                <td align="middle">
+                    <img src="images/task4/CBbunnyS2L4M3.png" width="480px"/>
+                    <figcaption align="middle">At 2 samples per pixel, there's less noise. Wow.</figcaption>
+            </tr>
+            <br>
+            <tr>
+                <td align="middle">
+                    <img src="images/task4/CBbunnyS4L4M3.png" width="480px"/>
+                    <figcaption align="middle">4 samples per pixel</figcaption>
+                <td align="middle">
+                    <img src="images/task4/CBbunnyS8L4M3.png" width="480px"/>
+                    <figcaption align="middle">8 samples per pixel</figcaption>
+            </tr>
+            <br>
+            <tr>
+                <td align="middle">
+                    <img src="images/task4/CBbunnyS16L4M3.png" width="480px"/>
+                    <figcaption align="middle">16 samples per pixel</figcaption>
+                <td align="middle">
+                    <img src="images/task4/CBbunnyS64L4M3.png" width="480px"/>
+                    <figcaption align="middle">64 samples per pixel</figcaption>
+            </tr>
+            <br>
+            <tr>
+                <td align="middle">
+                    <img src="images/task4/CBbunnyS1024L4M3.png" width="480px"/>
+                    <figcaption align="middle">1024 samples per pixel. As we increase the sampling rate there's less noise</figcaption>
+            </tr>
+            <br>
+        </table>
+    </div>
+
+</div>
+<div>
+    <h2>Part 5: Adaptive Sampling</h2>
+    We estimate a pixel's convergence by dividing the standard deviation by the square root of the mean, then multiplying by 1.96. If the convergence is smaller than the mean scaled by some constant tolerance factor, we stop rendering that pixel and move onto the next. For efficiency, we calculate the average and standard deviation only once every couple of samples.
+    <img src="images/2048.png" alt=""/>
+    <img src="images/2048_rate.png" alt=""/>
+</div>
+</body>
 </html>
+
+
+
+
