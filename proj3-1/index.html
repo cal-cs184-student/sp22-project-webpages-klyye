@@ -193,19 +193,19 @@ For Importance Sampling, instead of choosing a random ray direction along a unit
             <br>
             <tr>
                 <td align="middle">
-                    <img src="images/task4/CBbunnyS1024L4M0.png" width="480px"/>
-                    <figcaption align="middle">At 0 max bounces, the bunny looks identical to direct lighting only (part 3).</figcaption>
+                    <img src="images/task4/fix.png" width="480px"/>
+                    <figcaption align="middle">At 0 max bounces, we only see light sources.</figcaption>
                 <td align="middle">
-                    <img src="images/task4/CBbunnyS1024L4M1.png" width="480px"/>
-                    <figcaption align="middle">At 1 max bounces, you can see most of the major effects of global illumination.</figcaption>
+                    <img src="images/task4/CBbunnyS1024L4M0.png" width="480px"/>
+                    <figcaption align="middle">At 1 max bounces, the bunny looks identical to direct lighting only (part 3).</figcaption>
             </tr>
             <br>
             <tr>
                 <td align="middle">
-                    <img src="images/task4/CBbunnyS1024L4M2.png" width="480px"/>
-                    <figcaption align="middle">At 2 max bounces, the image is slightly more well-lit than 1 max bounces.</figcaption>
+                    <img src="images/task4/CBbunnyS1024L4M1.png" width="480px"/>
+                    <figcaption align="middle">At 2 max bounces, you can see most of the major effects of global illumination.</figcaption>
                 <td align="middle">
-                    <img src="images/task4/CBbunnyS1024L4M3.png" width="480px"/>
+                    <img src="images/task4/CBbunnyS1024L4M2.png" width="480px"/>
                     <figcaption align="middle">At 3 max bounces, the image is ever so slightly brighter than at 2 max bounces.</figcaption>
             </tr>
             <br>
@@ -254,8 +254,18 @@ For Importance Sampling, instead of choosing a random ray direction along a unit
 </div>
 <div>
     <h2>Part 5: Adaptive Sampling</h2>
-    We estimate a pixel's convergence by dividing the standard deviation by the square root of the mean, then multiplying by 1.96. If the convergence is smaller than the mean scaled by some constant tolerance factor, we stop rendering that pixel and move onto the next. For efficiency, we calculate the average and standard deviation only once every couple of samples.<br />
-    <img src="images/2048.png" alt=""/> <br />
+    We estimate a pixel's convergence by dividing the standard deviation by the square root of the mean, then multiplying by 1.96. If the convergence is smaller than the mean scaled by some constant tolerance factor, we stop rendering that pixel and move onto the next. For efficiency, we calculate the average and standard deviation only once every couple of samples.
+    <br>
+    <tr>
+        <td align="middle">
+            <img src="images/2048.png" width="480px"/>
+            <figcaption align="middle">Noise-free render.</figcaption>
+        <td align="middle">
+            <img src="images/2048
+" width="480px"/>
+            <figcaption align="middle">The sample rate of the above image.</figcaption>
+    </tr>
+    <img src="images/2048.png" alt=""/>
     <img src="images/2048_rate.png" alt=""/>
 </div>
 </body>
