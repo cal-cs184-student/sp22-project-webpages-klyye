@@ -1,7 +1,125 @@
-<html>
-	<head>
-	</head>
-	<body>
-		Project 3-2 here
-	</body>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<style>  
+    div.padded {  
+      padding-top: 0px;  
+      padding-right: 100px;  
+      padding-bottom: 0.25in;  
+      padding-left: 100px;  
+    }  
+  </style> 
+<title>Kyle Zhang & Shreyas Kompalli  |  CS 184</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" type="text/css" href="style.css" media="screen" />
+</head>
+<body>
+<br />
+<h1 align="middle">Assignment 3: PathTracer</h1>
+    <h2 align="middle">Kyle Zhang & Shreyas Kompalli</h2>
+
+    <h2 align="middle">Part 2: Microfacet Materials</h2>
+<p>The implementation of this part mostly revolves around implementing the formulas given in the spec. We calculate the microfacet BRDF by first calculating the Fresnel term, the shadowing-masking term, and the normal distribution function, and then plugging them all into the given equation. The normal distribution here is a Beckmann distribution based on the roughness parameter alpha. The Fresnel term is calcuated based on the indices of refraction for conductors, eta and k, at each wavelength of colored light (Red, Green, Blue). Finally, we importance sample in order to reduce noise.</p>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="middle">
+                        <img src="images/part2/dragon0.5.png"  />
+                        <figcaption align="middle">alpha=0.5
+                        </figcaption>
+                    <td align="middle">
+                        <img src="images/part2/dragon0.25.png"  />
+                        <figcaption align="middle">alpha=0.25
+                        </figcaption>
+                </tr>
+                <tr>
+                    <td align="middle">
+                        <img src="images/part2/dragon0.05.png"  />
+                        <figcaption align="middle">alpha=0.05
+                        </figcaption>
+                    <td align="middle">
+                        <img src="images/part2/dragon0.005.png"  />
+                        <figcaption align="middle">alpha=0.005
+                        </figcaption>
+                </tr><tr>
+                <p>As alpha decreases, the microfacet material gets a glossier appearance. You can see the black outside of the box more clearly reflected for lower values of alpha. This makes sense, as the rougher a material is (higher alpha), the more light is scattered, so the less glossy it looks.</p>
+                <td align="middle">
+                    <img src="images/part2/bunny_importance.png"  />
+                    <figcaption align="middle">Importance sampling
+                    </figcaption>
+                <td align="middle">
+                    <img src="images/part2/bunny_uniform.png"  />
+                <figcaption align="middle">Uniform sampling.
+                </figcaption>
+            </tr>
+            </table>
+            <p>Note in the uniform sampling case how the image is much noisier, especially in areas of the bunny that are not just white or just black. This matches our knowledge that uniform cosine sampling does not reflect the Beckmann distribution as well as our importance sampling.</p>
+            <img src="images/part2/dragon_calcium.png" width="800px">
+            <p>This is a dragon made out of calcium. It has eta values of (0.29294 0.28568 0.28733) and k values of (2.7181 2.3479 1.8333)</p>
+        </div>
+
+
+    <h2 align="middle">Part 4: Depth of Field</h2>
+    <p>A pinhole camera is an ideal model that doesn't take into account the distortion and blurriness of a true lens-based camera. In the
+    pinhole model, we assume that our camera lens aperture is a point (of size 0), so we can ignore the real world effects of a focal point. In contrast,
+    a thin-lens model treats the camera as a lens; we assume that the camera refracts like a lens, but we ignore the actual thickness of the lens. This means
+    that objects need to be at some focal distance D away from the lens in order for them to be in focus. Unlike in the pinhole camera model where an object at any
+    distance away from the camera would be in focus, the thin-lens model blurs out all objects/points that aren't precisely located on the plane that is
+    focalDistance away from the lens. </p>
+    <div align="center">
+        <p> The "focus stack" of renders at various focal distances. We see that as the focal distance increases, the portion of the dragon that is in focus progresses further back. </p>
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/part4/dragon-depth4.3.png"  />
+                    <figcaption align="middle">Focal distance = 4.3
+                    </figcaption>
+                <td align="middle">
+                    <img src="images/part4/dragon-depth4.56.png"  />
+                    <figcaption align="middle">Focal distance = 4.56
+                    </figcaption>
+            </tr>
+            <tr>
+                <td align="middle">
+                    <img src="images/part4/dragon-depth4.7.png"  />
+                    <figcaption align="middle">Focal distance = 4.7
+                    </figcaption>
+                <td align="middle">
+                    <img src="images/part4/dragon-depth5.png"  />
+                    <figcaption align="middle">Focal distance = 5
+                    </figcaption>
+            </tr>
+        </table>
+        <p> The dragon rendered with various lens aperture sizes. </p>
+        <table style="width=100%">
+            <tr>
+                <td align="middle">
+                    <img src="images/part4/dragon-lens1.png"  />
+                    <figcaption align="middle">Lens aperture = 1
+                    </figcaption>
+                <td align="middle">
+                    <img src="images/part4/dragon-lens1.5.png"  />
+                    <figcaption align="middle">Lens aperture = 1.5
+                    </figcaption>
+            </tr>
+            <tr>
+                <td align="middle">
+                    <img src="images/part4/dragon-lens2.3.png"  />
+                    <figcaption align="middle">Lens aperture = 2.3
+                    </figcaption>
+                <td align="middle">
+                    <img src="images/part4/dragon-lens3.png"  />
+                    <figcaption align="middle">Lens aperture = 3
+                    </figcaption>
+            </tr>
+        </table>
+    </div>
+
+
+</div>
+</body>
 </html>
+
+
+
+
