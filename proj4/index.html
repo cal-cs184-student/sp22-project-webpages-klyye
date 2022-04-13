@@ -1,7 +1,142 @@
-<html>
-	<head>
-	</head>
-	<body>
-		Project 4 here
-	</body>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+    <style>
+        body {
+            padding: 100px;
+            width: 1000px;
+            margin: auto;
+            text-align: left;
+            font-weight: 300;
+            font-family: 'Open Sans', sans-serif;
+            color: #121212;
+        }
+
+        h1, h2, h3, h4 {
+            font-family: 'Source Sans Pro', sans-serif;
+        }
+    </style>
+    <title>Kyle Zhang & Shreyas Kompalli: CS 184 Mesh Editor</title>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+</head>
+
+
+<body>
+
+<h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2017</h1>
+<h1 align="middle">Project 4: Cloth Simulator</h1>
+<h2 align="middle">Kyle Zhang & Shreyas Kompalli</h2>
+
+<br><br>
+
+<div>
+
+    <h2 align="middle">Overview</h2>
+    <p>Give a high-level overview of what you implemented in this project. Think about what you've built as a whole.
+        Share your thoughts on what interesting things you've learned from completing the project.</p>
+
+    <h2 align="middle">Part I: Masses and springs</h2>
+    <p>
+        We first placed evenly spaced points along the grid specified by the program parameters. These point masses are stored in row-major order in a 1D vector. We set pins, which prevent movement, on any point mass whose coordinates are in the pinned vector. Then, we created structural, shearing, and bending constraints in the manner laid out on the spec. These spring constraints are also stored in their own vector.
+    </p>
+    <div align="middle">
+    <img src="images/pt1_all_constraints.png" width="1000px">
+    <p>All constraints</p>
+    <img src="images/pt1_just_shearing.png" width="1000px">
+    <p>Just shearing constraints</p>
+    <img src="images/pt1_no_shearing.png" width="1000px">
+    <p>No shearing constraints</p>
+    </div>
+
+    <h2 align="middle">Part 2: Simulation via numerical integration</h2>
+    <p>
+        We simulated the motion of each point by taking into account external forces acting upon each point, like gravity, as well as spring forces caused by the spring constraints that bind these point masses together. We estimate this motion across each time step with Verlet integration, which takes into account the current position of the point, the previous position of the point, and the acceleration due to force, and attempts to estimate the next location of the point from that information. We also added a damping factor in order to simulate loss of energy due to things like friction. Finally, in order to prevent the point masses from moving too far from one another, we added a further restriction that none of the springs could be stretched out much more than their rest length.
+    </p>
+    <div align="middle">
+        <img src="images/pt2_default.png" width="1000px">
+        <p>scene/pinned4.json at rest, with default parameters.</p>
+        <img src="images/pt2_low_damping.gif" width="1000px">
+        <p>Low damping parameter. Note how vigorously the cloth swings around and folds in on itself. This is how the cloth would behave if there was very little friction.</p>
+        <img src="images/pt2_high_damping.gif" width="1000px">
+        <p>High damping parameter. This cloth slowly and gently billows into its resting position, not swinging much after reaching it.</p>
+        <img src="images/pt2_low_ks.gif" width="1000px">
+        <p>Low ks (spring constant). This causes the cloth to be more "foldy", as the springs holding the point masses together are not as tight.</p>
+        <img src="images/pt2_high_ks.gif" width="1000px">
+        <p>High ks (spring constant). The cloth ends up looking almost completely flat, except for at the ver top, as it falls into its resting position.</p>
+        <img src="images/pt2_low_density.gif" width="1000px">
+        <p>Low density. This lowers the mass of each point, lowering the external forces on them, creating an effect analogous to raising the spring constant.</p>
+        <img src="images/pt2_high_density.gif" width="1000px">
+        <p>High density. This raises the mass of each point, raising the external forces on them, creating an effect analogous to lowering the spring constant.</p>
+    </div>
+
+    <h2 align="middle">Part 3: Handling collisions with other objects</h2>
+    <p>
+    When handling collisions, we first check if a point mass is within (colliding with) an object. If so, then we calculate a correction vector and apply it to each intersecting point mass in order to bump it away from the object it is intersecting with.
+    </p>
+    <div align="middle">
+        <img src="images/pt3_sphere_5000ks.png" width="1000px">
+        <p>The cloth interacting with the sphere at ks=5000.</p>
+        <img src="images/pt3_sphere_500ks.png" width="1000px">
+        <p>The cloth interacting with the sphere at ks=500. Notice that the cloth is less stiff than before, since the spring constant is lower and allows for more elasticity/looseness.</p>
+        <img src="images/pt3_sphere_50000ks.png" width="1000px">
+        <p>The cloth interacting with the sphere at ks=50000. Notice that the cloth is now far more stiff, since the higher spring constant leads to less responsiveness from the springs.</p>
+        <img src="images/pt3_plane.png" width="1000px">
+        <p>The cloth resting calmly on a plane.</p>
+    </div>
+
+    <h2 align="middle">Part 4: Self Collisions</h2>
+    <p>
+        The idea behind self collisions is similar to checking for collisions with other objects. We use a spacially partitioned hash table to speed up this intersection checking. When two points in the same hash bucket are too close too each other, we bump them apart a bit.
+    </p>
+    <div align="middle">
+        <img src="images/pt4-begin.png">
+        <p>The beginning of the cloth simulation.</p>
+        <img src="images/pt4-middle.png">
+        <p>The moment of the cloth simulation when it touches the plane.<p>
+        <img src="images/pt4-end.png">
+        <p>Near the final resting state of the cloth.<p>
+        <img src="images/pt4-high-density.png">
+        <p>State of a high density cloth several seconds after landing. The cloth is much more foldy and contains many wrinkles.</p>
+        <img src="images/pt4-low-density.png">
+        <p>State of a low density cloth several seconds after landing. The cloth is much more smooth and contains very little folds.</p>
+        <img src="images/pt4-high-ks.png">
+        <p>State of a high ks cloth several seconds after landing. Similar to low density, the cloth is very smooth.</p>
+        <img src="images/pt4-low-ks.png">
+        <p>State of a low ks cloth several seconds after landing. Similar to high density, the cloth is very bumpy.</p>
+    </div>
+
+    <h2 align="middle">Part 5: Shaders</h2>
+    <p>
+        A shader program is a program run in parallel on the GPU that can modify graphics at certain stages of the graphics pipeline. Vertex shaders are programs that can modify the positions of vertices in meshes. Fragment shaders are programs that can modify the colors of fragments (pixels). Data can be passed in from the program to the vertex shader, which can then pass more data to the fragment shader, and in conjunction these shaders can perform calculations on each vertex and pixel in order to create interesting lighting and material effects.
+    </p>
+    <div align="middle">
+        <img src="images/pt5_ambient.png">
+        <p>Ambient lighting only. Ambient is just one uniform color, usually a dark one, to give unlit areas a bit of brightness.</p>
+        <img src="images/pt5_diffuse.png">
+        <p>Diffuse lighting only. Diffuse lighting is based on the cosine of the angle between the surface normal and the direction to the light, as per Lambert's law. It gives a uniform shaded look.</p>
+        <img src="images/pt5_specular.png">
+        <p>Specular lighting only. Specular lighting only occurs at angles near the mirror direction. It gives a strong bright highlight at those locations.</p>
+        <img src="images/pt5_phong.png">
+        <p>Blinn-Phong lighting, which is just the sum of ambient, diffuse, and specular lighting. It has a shiny, smooth look.</p>
+        <img src="images/pt5_texture.png">
+        <p>Custom texture, featuring Professor Hilfinger.</p>
+        <img src="images/pt5_bump.png">
+        <p>Bump mapping, with normal=25 and height=0.07.</p>
+        <img src="images/pt5_displacement.png">
+        <p>Displacement mapping, with normal=25 and height=0.07.</p>
+        <img src="images/pt5_bump_16.png">
+        <p>Bump mapping, with the same settings as before and resolution at 16. This looks mostly the same.</p>
+        <img src="images/pt5_displacement_16.png">
+        <p>Displacement mapping, with the same settings as before and resolution at 16. This looks more sharp and pointy than one might expect this brick texture to look.</p>
+        <img src="images/pt5_bump_128.png">
+        <p>Bump mapping, with the same settings as before and resolution at 128. This looks mostly the same.</p>
+        <img src="images/pt5_displacement_128.png">
+        <p>Displacement mapping, with the same settings as before and resolution at 128. This looks more akin to the brick texture, with flat regions where the brick faces are, and notches in between the bricks. The sphere also appears more squashed than before.</p>
+        <img src="images/pt5_mirror.png">
+        <p>Mirror texture.</p>
+        <img src="images/custom.gif">
+        <p>Our custom fragment shader. This weird oscillating rainbow grid effect is achieved by plugging the vertex position and normal multiplying by the time into some sines and cosines. Then, this color is plugged into the Phong shading function shown previously. In order to access the time, the skeleton code had to be modified to pass in time as a uniform variable. The exact formula involving the sines and cosines is somewhat arbitrary and was found by experimentation.</p>
+    </div>
+</body>
 </html>
